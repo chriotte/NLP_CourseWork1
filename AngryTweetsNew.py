@@ -1,8 +1,11 @@
 # coding: utf-8
 import unicodecsv			# csv reader
 import heapq
+import time
 from datetime import datetime
 from random import shuffle
+import matplotlib.pyplot as plt
+import operator
 
 from sklearn.svm         import LinearSVC
 from sklearn.metrics     import precision_recall_fscore_support
@@ -15,6 +18,7 @@ from nltk.tokenize       import word_tokenize
 from nltk.stem           import WordNetLemmatizer
 from nltk.corpus         import stopwords
 
+timeStart = time.time()
 ##################################
 ######### DATA LOADING AND PARSING
 ##################################
@@ -55,13 +59,6 @@ def preProcess(text):
 def parseTweet(tweetLine):
     tweet = tweetLine[4]
     date  = datetime.strptime(tweetLine[1], "%Y-%m-%d %H:%M:%S")
-
-#    if tweetLine[1] == 'created_at':
-#        date = datetime.strptime("01/01/2017 00:00:00", "%d/%m/%Y %H:%M:%S")
-#    elif tweetLine[1]:
-#        date  = datetime.strptime(tweetLine[1], "%d/%m/%Y %H:%M:%S")
-#    else:
-#        date = tweetLine[1]
     return (date, tweet)
         
 def countTweets(tweetType):
@@ -99,9 +96,6 @@ def toFeatureVector(words):
 ## This should be a complete function 
 def trainClassifier(trainData):
     classifier = SklearnClassifier(LinearSVC())
-#    classifier = SklearnClassifier(BernoulliNB())
-#    classifier = SklearnClassifier(svm.SVC())
-#    classifier = SklearnClassifier(MultinomialNB())
 
     result = classifier.train(trainData)
     return result
@@ -111,18 +105,7 @@ def crossValidate(dataset, folds):
    # print(dataset)
     shuffle(dataset)
     subset_size = int(len(dataset)/folds)
-
-#    cv_angryTestTotal   = 0
-#    cv_happyTestTotal   = 0
-#    cv_angryPredTotal   = 0
-#    cv_happyPredTotal   = 0
-#    cv_count            = 0
-    
-    cv_accuracy   = []
-    cv_precision  = []
-    cv_recall     = []
-    cv_fscore     = []
-    
+       
     for i in range(folds):
         print("*************************")
         print("Cross validation fold: ",i+1)
@@ -132,59 +115,25 @@ def crossValidate(dataset, folds):
         prediction = predictLabels(testing_this_round,classifier)
         
 ###METRICS
-#        cv_angryTest        = 0
-#        cv_happyTest        = 0
-#        cv_angryPred        = 0
-#        cv_happyPred        = 0
-#        cv_count            = 0
-#        for testLabel in testing_this_round:
-#            cv_count += 1
-#            if testLabel[1] == 'angry':
-#                cv_angryTest        +=1
-#                cv_angryTestTotal   +=1
-#            else:
-#                cv_happyTest        +=1
-#                cv_happyTestTotal   +=1
-#    
-#        for x in prediction:
-#            cv_count += 1
-#            if x == 'angry':
-#                cv_angryPred        +=1
-#                cv_angryPredTotal   +=1
-#            else: 
-#                cv_happyPred        +=1
-#                cv_happyPredTotal   +=1
-        #print("prediction: ",prediction)
         trueLabels  = [x[1] for x in testing_this_round]
         metrics     = precision_recall_fscore_support(trueLabels, prediction, average='macro')
         accuracy    = nltk.classify.accuracy(classifier, testing_this_round)
         precision   = metrics[0]
         recall      = metrics[1]
         fscore      = metrics[2]
-#        print("cv_happyTest:    ", cv_happyTest)
-#        print("cv_happyPred:    ", cv_happyPred)
-#        print("cv_angryTest:    ", cv_angryTest)
-#        print("cv_angryPred:    ", cv_angryPred)
-        print("accuracy:  ", "{:.4}".format(accuracy))       
-        print("precision: ", "{:.4}".format(precision))
-        print("recall:    ", "{:.4}".format(recall))
-        print("fscore:    ", "{:.4}".format(fscore))
-        print()
+        print(" Accuracy:  ", "{:.4}".format(accuracy), "\n Precision: ", "{:.4}".format(precision))
+        print(" Recall:    ", "{:.4}".format(recall),   "\n Fscore:    ", "{:.4}".format(fscore),"\n")
         cv_accuracy.append(accuracy)
         cv_precision.append(precision)
         cv_recall.append(recall)
         cv_fscore.append(fscore)
     print("***************************")
-    print("****** TOTAL METRICS ******")
+    print("***** AVERAGE METRICS *****")
     print("***************************")
-#    print("cv_happyTestTotal:    ",cv_happyTestTotal)
-#    print("cv_happyPredTotal:    ",cv_happyPredTotal)
-#    print("cv_angryTestTotal:    ",cv_angryTestTotal)
-#    print("cv_angryPredTotal:    ",cv_angryPredTotal)
-    print("Accuracy:  ",  "{:.4}".format(sum(cv_accuracy)/len(cv_accuracy)))
-    print("Precision: ",  "{:.4}".format(sum(cv_precision)/len(cv_precision)))
-    print("Recall:    ",  "{:.4}".format(sum(cv_recall)/len(cv_recall)))
-    print("Fscore:    ",  "{:.4}".format(sum(cv_fscore)/len(cv_fscore)))
+    print(" Accuracy:  ",  "{:.4}".format(sum(cv_accuracy)/len(cv_accuracy)))
+    print(" Precision: ",  "{:.4}".format(sum(cv_precision)/len(cv_precision)))
+    print(" Recall:    ",  "{:.4}".format(sum(cv_recall)/len(cv_recall)))
+    print(" Fscore:    ",  "{:.4}".format(sum(cv_fscore)/len(cv_fscore)))
         # find mean accuracy over all rounds
         
 # PREDICTING LABELS GIVEN A CLASSIFIER
@@ -221,8 +170,9 @@ def findAngerLevels(tweetData, classifier):
     return angryLevel
 
 def findAngerPeaks(angerLevels):
-    tenHighest = heapq.nlargest(10, angerLevels, key=angerLevels.get)
-    return tenHighest
+    sorted_x = sorted(angerLevels.items(), key=operator.itemgetter(1), reverse = True)
+    sorted_x = sorted_x[0:10]
+    return sorted_x
     
 
 # tweets will have one feature, which is going to be a numerical value
@@ -234,11 +184,11 @@ happyPath   = path + 'happy_tweets.csv'
 londonPath  = path + 'london_2017_tweets.csv'
 
 # Use the below for testing 
-angryPath   = path + 'angry_tweets_500.csv'
-happyPath   = path + 'happy_tweets_500.csv'
-#londonPath  = path + 'london_2017_tweets_500.csv'
-londonPath  = path + 'london_2017_tweets_NEW.csv'
-
+#angryPath   = path + 'angry_tweets_500.csv'
+#happyPath   = path + 'happy_tweets_500.csv'
+#londonPath  = path + 'london_2017_tweets_NEW.csv'    # 48.000 lines
+#londonPath  = path + 'london_2017_tweets_SMALL.csv'  # 10.000 lines
+#londonPath  = path + 'london_2017_tweets_TINY.csv'  # 5.000 lines
 
 ########################################################
 ######################### MAIN #########################
@@ -250,6 +200,11 @@ tubeTweetCount      = []
 septTweetCount      = []
 compleateFeatureDic = {}
 angryLevel          = {}
+anger_peaks         = {}
+cv_accuracy         = []
+cv_precision        = []
+cv_recall           = []
+cv_fscore           = []
 
 ####### Load data
 print ("Loading happy")
@@ -260,45 +215,37 @@ print ("Loading London data...")
 loadApplicationData(londonPath) 
 print("All data loaded successfully")
 print("**************************************************")
-print ('Number of words in tweetData: ' + str(len(tweetData)))
-print ('Number of words in trainData: ' + str(len(trainData)))
+print ('Number of words in tweetData:       ' + str(len(tweetData)))
+print ('Number of words in trainData:       ' + str(len(trainData)))
 print ('Number of words in londonTweetData: ' + str(len(londonTweetData)))
 print("**************************************************")
 
-####### Cross validation
+####### CV & Classifier
 cv_results = crossValidate(trainData, 10)
-print("************************")
-print("CrossValidation complete")
-print("************************")
-
-####### Train classifier to use on London Data
-print("Training Classifier on all trainData")
 classifier = trainClassifier(trainData)
 
 ####### Compute anger from london data
+print("************************")
 print ("Computing anger levels!")
 angerLevels = findAngerLevels(londonTweetData, classifier)
-anger_peaks = None
-
-print("angerLevels: ")
-
+anger_peaks = findAngerPeaks(angerLevels)
 for x in angerLevels:
     print(x, ":", "{:.4}".format(angerLevels[x]) )
-
-print (anger_peaks)
+print("************************")
+print ("Peaks")
+for x in anger_peaks:
+    print(x[0], ":","{:.4}".format(x[1]))
+print("************************")
 print("Tube tweets loaded: ", sum(tubeTweetCount))
 print("Tube tweets on 9. Sept: ", sum(septTweetCount))
+
+## PLOTTING
+plt.bar(range(len(angerLevels)), angerLevels.values(), align='center')
+plt.xticks(range(len(angerLevels)), list(angerLevels.keys()))
+plt.ylim( (0.5, 1))  
+plt.show()
+
 print("**************************************************")
-
-"""
-datetime.strptime("2016-01-05 12:02:03", "%Y-%m-%d %H:%M:%S")
-Out[7]: datetime.datetime(2016, 1, 5, 12, 2, 3)
-
-a = datetime.strptime("2016-01-05 12:02:03", "%Y-%m-%d %H:%M:%S")
-
-a.hour
-Out[9]: 12
-
-a.second
-Out[10]: 3
-"""
+timeEnd = time.time()
+elapsed = timeEnd-timeStart
+print("Elapsed seconds:", int(elapsed))
