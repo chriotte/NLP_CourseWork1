@@ -42,6 +42,5 @@ def mainScript():
 # results = mainScript()
 
 inputList = [["this","is","fun"],["london","is","great"]]
-
 bigrams = getBigrams(inputList)
 print(bigrams)
