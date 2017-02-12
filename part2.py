@@ -72,12 +72,13 @@ def mainScript():
 # The line below can be toggled as a comment to toggle execution of the main script
 # results = mainScript()
 
-tweets = londonOnlyTweets
+
 inputList = [["this","is","fun"],["london","is","great"]]
 
+tweets = londonOnlyTweets
 bigrams = getBigrams(tweets)
-
 probDists = MLEProbDist()
 
 condProbDist = conditionalProbDist(probDists, bigrams)
+
 print(condProbDist)
