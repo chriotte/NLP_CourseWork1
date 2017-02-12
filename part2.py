@@ -37,7 +37,7 @@ def isolateTweets(londonTweets):
     for tweets in londonTweets:
         londonOnlyTweets.append(tweets[0])
         
-isolateTweets(londonOnlyTweets)
+isolateTweets(londonTweetData)
 #=============================================================================#
 
 ####
@@ -74,11 +74,19 @@ def mainScript():
 
 
 inputList = [["this","is","fun"],["london","is","great"]]
+testBigramOne = "hello"
+testBigramTwo = "world"
 
 tweets = londonOnlyTweets
 bigrams = getBigrams(tweets)
-probDists = MLEProbDist()
 
-condProbDist = conditionalProbDist(probDists, bigrams)
+condProbDist = conditionalProbDist(MLEProbDist, [bigrams])
 
+
+condProbDist1 = conditionalProbDist(MLEProbDist, [("hello","world")])
+condProbDist2 = conditionalProbDist(MLEProbDist, [("hello","world"), ("python", "pythoning")])
+condProbDist3 = conditionalProbDist(MLEProbDist, [("hello","world"), ("python", "pythoning"), ("sexy", "petur")])
 print(condProbDist)
+print(condProbDist1)
+print(condProbDist2)
+print(condProbDist3)
