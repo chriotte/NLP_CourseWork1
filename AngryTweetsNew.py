@@ -245,7 +245,7 @@ print("Tube tweets on 9. Sept: ", sum(septTweetCount))
 plt.bar(range(len(angerLevels)), angerLevels.values(), align='center')
 plt.xticks(range(len(angerLevels)), list(angerLevels.keys()))
 plt.ylim( (0.5, 1))  
-plt.show()
+plt.show() 
 
 print("**************************************************")
 timeEnd = time.time()
