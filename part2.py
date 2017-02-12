@@ -51,10 +51,9 @@ isolateTweets(londonTweetData)
 def getBigrams(tweets):
     bigrams = []
     for tweet in tweets:# if there is more than one element in the list
-        bigram = []
         for word in range(len(tweet)-1):
-            bigram.append((tweet[word], tweet[word+1]))
-        bigrams.append(bigram)
+            bigrams.append((tweet[word], tweet[word+1]))
+
     return bigrams
 
 # conditionalProbDist will return a probability distribution over a list of
@@ -80,13 +79,15 @@ testBigramTwo = "world"
 tweets = londonOnlyTweets
 bigrams = getBigrams(tweets) 
 
-condProbDist = conditionalProbDist(MLEProbDist, [bigrams])
+#condProbDist = conditionalProbDist(MLEProbDist, [bigrams])
 
-
+condProbDist = conditionalProbDist(MLEProbDist, bigrams)
 condProbDist1 = conditionalProbDist(MLEProbDist, [("hello","world")])
 condProbDist2 = conditionalProbDist(MLEProbDist, [("hello","world"), ("python", "pythoning")])
 condProbDist3 = conditionalProbDist(MLEProbDist, [("hello","world"), ("python", "pythoning"), ("sexy", "petur")])
-print(condProbDist)
 print(condProbDist1)
 print(condProbDist2)
 print(condProbDist3)
+print(condProbDist3["sexy"].generate())
+
+print(condProbDist)
