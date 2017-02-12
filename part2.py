@@ -78,7 +78,7 @@ testBigramOne = "hello"
 testBigramTwo = "world"
 
 tweets = londonOnlyTweets
-bigrams = getBigrams(tweets)
+bigrams = getBigrams(tweets) 
 
 condProbDist = conditionalProbDist(MLEProbDist, [bigrams])
 
