@@ -8,7 +8,6 @@ from nltk.probability import ConditionalProbDist, LaplaceProbDist, MLEProbDist
 from nltk.tokenize       import TweetTokenizer
 
 timeStart = time.time()
-
 #=============================================================================#
 # Load and process 
 #=============================================================================#
@@ -19,10 +18,9 @@ def loadApplicationData(path):
          for line in reader:
              (date,tweet) = parseTweet(line)
              if tweet:  
-                 if (date.day == 9 or date.day == 5) and date.year == 2017 and date.month == 1 :
-                     tokenizedTweets = preProcess(tweet)
-                     date = simplifyDate(date)
-                     londonTweetData.append([tokenizedTweets, date])
+                 tokenizedTweets = preProcess(tweet)
+                 date = simplifyDate(date)
+                 londonTweetData.append([tokenizedTweets, date])
                      
 def parseTweet(tweetLine):
      tweet = tweetLine[4]
@@ -37,8 +35,7 @@ def preProcess(text):
 def getTweets(inputTweets):
     tweets = []
     for tweet in inputTweets:
-        tweets.append(inputTweets[0])
-    print(tweets)
+        tweets.append(tweet[0])
     return tweets
 
 def simplifyDate(date):
@@ -84,41 +81,39 @@ def quickMLE(tweets):
     condProbDist = conditionalProbDist(MLEProbDist, bigrams)
     return condProbDist
 
+def countBigrams(x, y, dataset):
+    bigram = (x,y)
+    dataset = getBigrams(getTweets(dataset))
+    count = 0
+    for items in dataset:
+        if items == bigram:
+            count += 1
+    print(count, "bigrams found that match", x, "and", y)
+            
 # this is the function where you can put your main script, which you can then
 # toggle if for test purposes
 def mainScript():
-    bigrams = getBigrams(getTweets(londonTweetData)) 
-    condProbDist = conditionalProbDist(MLEProbDist, bigrams)
-    print(condProbDist)
-    testProb = quickMLE(londonTweetData)
-    print(testProb)
-    
     
     print("Probabilities of bigram: ('Tube','strike')")
-    testProb = condProbDist["tube"].prob("strike")
-    print(testProb)
+    londonTweet  = quickMLE(londonTweetData)
+    londonTweet5 = quickMLE(londonTweetData5)
+    londonTweet9 = quickMLE(londonTweetData9)
+    countBigrams('Tube','strike',londonTweetData)
+    countBigrams('Tube','strike',londonTweetData5)
+    countBigrams('Tube','strike',londonTweetData9)
+    print("londonTweet :",londonTweet["tube"].prob("strike"))
+    print("5 Jan       :",londonTweet5["tube"].prob("strike"))
+    print("9 Jan       :",londonTweet9["tube"].prob("strike"))
      
+#=============================================================================#
+# Comment out to disable main function. 
+#=============================================================================#
 
-# The line below can be toggled as a comment to toggle execution of the main script
 mainScript()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#=============================================================================#
+# Track time
+#=============================================================================#
 print("**************************************************")
 timeEnd = time.time()
 elapsed = timeEnd-timeStart
