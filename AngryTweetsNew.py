@@ -17,6 +17,7 @@ from nltk.classify       import SklearnClassifier
 from nltk.tokenize       import word_tokenize
 from nltk.stem           import WordNetLemmatizer
 from nltk.corpus         import stopwords
+from nltk.tokenize       import TweetTokenizer
 
 timeStart = time.time()
 ##################################
@@ -53,7 +54,8 @@ def loadApplicationData(path):
                     
 # TEXT PREPROCESSING AND FEATURE VECTORIZATION
 def preProcess(text): 
-    tokens = word_tokenize(text)
+    tknzr = TweetTokenizer()
+    tokens = tknzr.tokenize(text)
     return tokens
     
 def parseTweet(tweetLine):
@@ -183,12 +185,12 @@ angryPath   = path + 'angry_tweets.csv'
 happyPath   = path + 'happy_tweets.csv'
 londonPath  = path + 'london_2017_tweets.csv'
 
-# Use the below for testing 
+## Use the below for testing 
 #angryPath   = path + 'angry_tweets_500.csv'
 #happyPath   = path + 'happy_tweets_500.csv'
 #londonPath  = path + 'london_2017_tweets_NEW.csv'    # 48.000 lines
 #londonPath  = path + 'london_2017_tweets_SMALL.csv'  # 10.000 lines
-#londonPath  = path + 'london_2017_tweets_TINY.csv'  # 5.000 lines
+londonPath  = path + 'london_2017_tweets_TINY.csv'  # 5.000 lines
 
 ########################################################
 ######################### MAIN #########################
