@@ -73,7 +73,7 @@ def mainScript():
 # results = mainScript()
 
 
-inputList = [["this","is","fun"],["london","is","great"]]
+inputList = [["this","is","fun"],["london","is","great"]] 
 testBigramOne = "hello"
 testBigramTwo = "world"
 
