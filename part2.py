@@ -137,12 +137,15 @@ def quickMLE(tweets):
 def getRatio():
     MLElondon  = quickMLE(londonTweetData)
     MLElondon9 = quickMLE(londonTweetData9)
-    MLElondon5 = quickMLE(londonTweetData5)    
+    MLElondon5 = quickMLE(londonTweetData5)  
+    print("FOR KATE:")
+    print(MLElondon['tube'].prob('strike'))
+    
     
     # Get ratios jan9 and store in variable Ratio
     for bigrams in uniqueBigrams9:
-        prob = MLElondon9[bigrams[0]].prob(bigrams[1])
-        probFULL = MLElondon[bigrams[0]].prob(bigrams[1])
+        prob        = MLElondon9[bigrams[0]].prob(bigrams[1])
+        probFULL    = MLElondon[bigrams[0]].prob(bigrams[1])
         
         ratio = prob - probFULL
         ratio9[bigrams] = ratio
