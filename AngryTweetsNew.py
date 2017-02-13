@@ -1,3 +1,6 @@
+#=============================================================================#
+# Part I
+#=============================================================================#
 # coding: utf-8
 import unicodecsv			# csv reader
 import time
@@ -19,10 +22,10 @@ from nltk.stem           import WordNetLemmatizer
 from nltk.corpus         import stopwords
 from nltk.tokenize       import TweetTokenizer
 
-timeStart = time.time()
-##################################
-######### DATA LOADING AND PARSING
-##################################
+timeStart = time.time() # Start timer
+#=============================================================================#
+# Load Data
+#=============================================================================#
 def loadData(path, label):
     with open(path, 'rb') as f:
         reader = unicodecsv.reader(f, encoding='utf-8')
@@ -32,20 +35,16 @@ def loadData(path, label):
             if tweet:   #if tweet is an empty string python reads it as False 
                 tweet = re.sub("[^a-zA-Z0-9 #]","",tweet)
                 tweet = re.sub(r'^https?:\/\/.*[\r\n]*', '__URL__', tweet, flags=re.MULTILINE)
-                lemmatizer = WordNetLemmatizer()
-                tweet = lemmatizer.lemmatize(tweet)
             
                 tokenizedTweets     = preProcess(tweet)
-                tweetFeatureVector = toFeatureVector(tokenizedTweets)
+                tweetFeatureVector  = toFeatureVector(tokenizedTweets)
                 tweetData.append((date,tokenizedTweets,label))      # (date, [word1, word2, word3], label)
                 trainData.append((tweetFeatureVector,label))        # ({Word1: count, Word2: count}, label)
              
-# load application data
 def loadApplicationData(path):
     with open(path, 'rb') as f:
         reader = unicodecsv.reader(f, encoding='utf-8')
         next(reader, None)  
-#        reader.next()
         for line in reader:
             countTweets("Tweet")
             (date,tweet) = parseTweet(line)
@@ -55,8 +54,12 @@ def loadApplicationData(path):
                     tokenizedTweets = preProcess(tweet)
                     tweetFeatureVector = toFeatureVector(tokenizedTweets)
                     londonTweetData.append([tweetFeatureVector, date])
-                    
+
+
+#=============================================================================#
 # TEXT PREPROCESSING AND FEATURE VECTORIZATION
+#=============================================================================#
+
 def preProcess(text): 
     tknzr = TweetTokenizer()
     tokens = tknzr.tokenize(text)
@@ -72,34 +75,41 @@ def countTweets(tweetType):
         tubeTweetCount.append(1)
     else:
         septTweetCount.append(1)
-          
+
+def timeElapsed():
+    print("   Done...")
+    timeEnd = time.time()
+    elapsed = timeEnd-timeStart
+    print("   Elapsed seconds:", int(elapsed))
+
+#==============================================================================
+# Feature vector
+#==============================================================================
 def toFeatureVector(words):
     featureDict = {}
     for word in words:
         unimportant_words = [':', 'http', '.', ',', '?', '...', "'s", "n't", 'RT', ';', '&', ')', '``', 'u', '(', "''", '|',]
-        ENGstopwords = stopwords.words('english')
         word = WordNetLemmatizer().lemmatize(word)
 
-#        unimportant_words = []
-#        ENGstopwords = []
+# Uncommment for testing -- Faster, but less accurate
+        unimportant_words = []
 
-        if word not in ENGstopwords:
-            if word not in unimportant_words:
-                if word[0:2] != '//':
-                    if isinstance(word, str):
-################################################################
-                        if word not in featureDict:
-                            featureDict[word] = 1
-                        else:
-                            featureDict[word] += 1
-                        if word not in compleateFeatureDic:
-                            compleateFeatureDic[word]    = 1
-                        else:
-                            compleateFeatureDic[word]    += 1    
-################################################################
+        if word not in unimportant_words:
+            if word[0:2] != '//':
+                if isinstance(word, str):
+                    if word not in featureDict:
+                        featureDict[word] = 1
+                    else:
+                        featureDict[word] += 1
+                    if word not in compleateFeatureDic:
+                        compleateFeatureDic[word]    = 1
+                    else:
+                        compleateFeatureDic[word]    += 1    
     return featureDict
 
-## This should be a complete function 
+#==============================================================================
+# Train Classifier & cross-validation
+#==============================================================================
 def trainClassifier(trainData):
     classifier = SklearnClassifier(LinearSVC())
 
@@ -142,7 +152,9 @@ def crossValidate(dataset, folds):
     print(" Fscore:    ",  "{:.4}".format(sum(cv_fscore)/len(cv_fscore)))
         # find mean accuracy over all rounds
         
+#==============================================================================
 # PREDICTING LABELS GIVEN A CLASSIFIER
+#==============================================================================
 def predictLabels(tweetData, classifier):
 	return classifier.classify_many(map(lambda t: t[0], tweetData))
 
@@ -150,8 +162,9 @@ def predictLabels(tweetData, classifier):
 def predictLabel(text, classifier):
 	return classifier.classify(text)
 
+#==============================================================================
 # COMPUTING ANGER LEVEL ON A SET OF TWEETS
-
+#==============================================================================
 def findAngerLevels(tweetData, classifier):    
     for tweet in tweetData:
         prediction = predictLabel(tweet[0],classifier)
@@ -180,8 +193,9 @@ def findAngerPeaks(angerLevels):
     sorted_x = sorted_x[0:10]
     return sorted_x
     
-
-# tweets will have one feature, which is going to be a numerical value
+#=============================================================================#
+# Define paths 
+#=============================================================================#
 angryLabel  =    'angry'
 happyLabel  =    'happy'
 path        =    'Data/'
@@ -190,15 +204,15 @@ happyPath   = path + 'happy_tweets.csv'
 londonPath  = path + 'london_2017_tweets.csv'
 
 ## Use the below for testing 
-#angryPath   = path + 'angry_tweets_500.csv'
-#happyPath   = path + 'happy_tweets_500.csv'
+angryPath   = path + 'angry_tweets_500.csv'
+happyPath   = path + 'happy_tweets_500.csv'
 #londonPath  = path + 'london_2017_tweets_NEW.csv'    # 48.000 lines
 #londonPath  = path + 'london_2017_tweets_SMALL.csv'  # 10.000 lines
 londonPath  = path + 'london_2017_tweets_TINY.csv'  # 5.000 lines
 
-########################################################
-######################### MAIN #########################
-########################################################
+#==============================================================================
+# Initialize variables
+#==============================================================================
 tweetData           = []
 trainData           = []                  # [({TweetWords: count}, label)]
 londonTweetData     = []            # Tweets from the london tube strike
@@ -212,25 +226,37 @@ cv_precision        = []
 cv_recall           = []
 cv_fscore           = []
 
-####### Load data
+#==============================================================================
+# Load functions
+#==============================================================================
 print ("Loading happy")
 loadData(happyPath, happyLabel)
+
 print("Loading angry")
 loadData(angryPath, angryLabel)
+
 print ("Loading London data...")
 loadApplicationData(londonPath) 
-print("All data loaded successfully")
-print("**************************************************")
-print ('Number of words in tweetData:       ' + str(len(tweetData)))
-print ('Number of words in trainData:       ' + str(len(trainData)))
-print ('Number of words in londonTweetData: ' + str(len(londonTweetData)))
-print("**************************************************")
 
-####### CV & Classifier
+print("All data loaded successfully")
+
+#==============================================================================
+#==============================================================================
+#==============================================================================
+#                                 MAIN
+#==============================================================================
+#==============================================================================
+#==============================================================================
+
+#==============================================================================
+#  CV & Classifier
+#==============================================================================
 cv_results = crossValidate(trainData, 10)
 classifier = trainClassifier(trainData)
 
-####### Compute anger from london data
+#==============================================================================
+#  Anger levels
+#==============================================================================
 print("************************")
 print ("Computing anger levels!")
 angerLevels = findAngerLevels(londonTweetData, classifier)
@@ -245,12 +271,17 @@ print("************************")
 print("Tube tweets loaded: ", sum(tubeTweetCount))
 print("Tube tweets on 9. Sept: ", sum(septTweetCount))
 
-## PLOTTING
+#==============================================================================
+# PLOTTING
+#==============================================================================
 plt.bar(range(len(angerLevels)), angerLevels.values(), align='center')
 plt.xticks(range(len(angerLevels)), list(angerLevels.keys()))
 plt.ylim( (0.5, 1))  
 plt.show() 
 
+#==============================================================================
+# DONE
+#==============================================================================
 print("**************************************************")
 timeEnd = time.time()
 elapsed = timeEnd-timeStart
