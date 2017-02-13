@@ -8,15 +8,14 @@ import re
 from datetime import datetime
 from nltk.probability import ConditionalFreqDist
 from nltk.probability import ConditionalProbDist, LaplaceProbDist, MLEProbDist
-from nltk.tokenize       import TweetTokenizer
-from nltk.stem import WordNetLemmatizer
+from nltk.tokenize    import TweetTokenizer
 from nltk.stem import PorterStemmer
 import operator
 from nltk.corpus import stopwords
 
 timeStart = time.time()
 #=============================================================================#
-# Load and process data, getters
+# lOAD DATA
 #=============================================================================#
 def loadApplicationData(path):
      with open(path, 'rb') as f:
@@ -24,26 +23,26 @@ def loadApplicationData(path):
          next(reader, None)  
          for line in reader:
              (date,tweet) = parseTweet(line)
-             if tweet:  
+             if tweet:
                  tokenizedTweets = preProcess(tweet)
                  tempString = []
                  date = simplifyDate(date)
                  for items in tokenizedTweets:
-                     items = items.lower()
-                     items = items.strip('?!.,/|\;:% ')
-                     items = items.replace(" ", "")
-                     items = re.sub(r'^https?:\/\/.*[\r\n]*', '__URL__', items, flags=re.MULTILINE)
-                     items = re.sub("[^a-z#@][\s]","",items)
-                     ps = PorterStemmer()
-                     items = ps.stem(items)
-                     if items:
-                         stop_words = set(stopwords.words("English"))
-                         if items not in stop_words:
-                             tempString.append(items)
-                 
+                     items = cleanTweet(items)
+                     tempString.append(items)
                  londonTweetData.append([tempString, date])
-##TODO
-# Remove stopwords
+                 
+def cleanTweet(items):
+     items = items.lower()
+     items = items.strip('?!.,/|\;:% ')
+     items = items.replace(" ", "")
+     items = re.sub(r'^https?:\/\/.*[\r\n]*', '__URL__', items, flags=re.MULTILINE)
+     items = re.sub("[^a-z#@][\s]","",items)
+     ps = PorterStemmer()
+     items = ps.stem(items)
+     if items:
+         return items
+
 def parseTweet(tweetLine):
      tweet = tweetLine[4]
      date  = datetime.strptime(tweetLine[1], "%Y-%m-%d %H:%M:%S")
@@ -98,16 +97,26 @@ def countBigrams(x, y, dataset):
     print(count, "bigrams found that match(", x, ",", y, ")")
 
 def timeElapsed():
-    print("   Done...")
-    timeEnd = time.time()
-    elapsed = timeEnd-timeStart
-    print("   Elapsed seconds:", int(elapsed))
+    timeNow         = time.time()
+    elapsedStart    = timeNow - timeStart
+    print("   >> Elapsed time: ", "{}".format(elapsedStart))
+    print("   >> Elapsed time: ", int(elapsedStart))
 
 
 def findXCommonBigrams(bigramData, x):
-    sorted_x = sorted(bigramData.items(), key=operator.itemgetter(1), reverse = True)
+    sorted_x = sortDic(bigramData)
     sorted_x = sorted_x[0:int((len(bigramData)*(x/100)))]
     return sorted_x
+
+def sortDic(dictionary):
+    sorted_x = sorted(dictionary.items(), key=operator.itemgetter(1), reverse = True)
+    return sorted_x
+
+def getBigramsFromDic(dictionary):
+    bigramList = []
+    for item in dictionary:
+        bigramList.append(item)
+    return bigramList
         
 #=============================================================================#
 # A bigram model using the NLTK built-in functions
@@ -121,11 +130,30 @@ def conditionalProbDist(probDist, bigrams):
  
 def quickMLE(tweets):
     bigrams = getBigrams(getTweets(tweets)) 
-    condProbDist = conditionalProbDist(MLEProbDist, bigrams)
+#    condProbDist = conditionalProbDist(MLEProbDist, bigrams)
+    condProbDist = conditionalProbDist(LaplaceProbDist, bigrams)
     return condProbDist
 
-def getRatio(x,y):
-    return "lol"
+def getRatio():
+    MLElondon  = quickMLE(londonTweetData)
+    MLElondon9 = quickMLE(londonTweetData9)
+    MLElondon5 = quickMLE(londonTweetData5)    
+    
+    # Get ratios jan9 and store in variable Ratio
+    for bigrams in uniqueBigrams9:
+        prob = MLElondon9[bigrams[0]].prob(bigrams[1])
+        probFULL = MLElondon[bigrams[0]].prob(bigrams[1])
+        
+        ratio = prob - probFULL
+        ratio9[bigrams] = ratio
+    
+    # Get ratios jan5
+    for bigrams in uniqueBigrams5:
+        prob = MLElondon5[bigrams[0]].prob(bigrams[1])
+        probFULL = MLElondon[bigrams[0]].prob(bigrams[1])
+        
+        ratio = prob - probFULL
+        ratio5[bigrams] = ratio
     
 #=============================================================================#
 # Intialize variables
@@ -133,48 +161,49 @@ def getRatio(x,y):
 londonTweetData     = []
 londonTweetData5    = []
 londonTweetData9    = []
+lastTime = time.time()
+ratio5 = {}
+ratio9 = {}
 
 path                = 'Data/'
 londonPath          = path + 'london_2017_tweets_TINY.csv'  # 5.000 lines
 londonPath          = path + 'london_2017_tweets.csv'       # full dataset
 
 print("Loading data")
-loadApplicationData(londonPath)   
+loadApplicationData(londonPath)  
+timeElapsed()
+
+print("Isolating 5th & 9th") 
 fiveAndNineJan(londonTweetData)
 timeElapsed()
 
 print("Finding unique bigrams")
-uniqueBigramsData5 = findUniqueBigrams(getBigrams(getTweets(londonTweetData5)))
-uniqueBigramsData9 = findUniqueBigrams(getBigrams(getTweets(londonTweetData9)))
+uniqueBigramsData5  = findUniqueBigrams(getBigrams(getTweets(londonTweetData5)))
+uniqueBigramsData9  = findUniqueBigrams(getBigrams(getTweets(londonTweetData9)))
+uniqueBigrams5      = getBigramsFromDic(uniqueBigramsData5)
+uniqueBigrams9      = getBigramsFromDic(uniqueBigramsData9)
 timeElapsed()
 
-print("Finding the top 10% most common bigrams" )
-percent = 10
-mostCommonJan5 = findXCommonBigrams(uniqueBigramsData5, percent)
-mostCommonJan9 = findXCommonBigrams(uniqueBigramsData9, percent)
-timeElapsed()
 #=============================================================================#
 # Main Function
 #=============================================================================#
 
 def mainScript():
-    print("Probabilities of bigram: ('tube','strike')")
-    londonTweet  = quickMLE(londonTweetData)
-    londonTweet5 = quickMLE(londonTweetData5)
-    londonTweet9 = quickMLE(londonTweetData9)
-
-    print("londonTweet :",londonTweet["tube"].prob("strike"))
-    print("5 Jan       :",londonTweet5["tube"].prob("strike"))
-    print("9 Jan       :",londonTweet9["tube"].prob("strike"))
+    getRatio()
      
 #=============================================================================#
 # Comment out to disable 
 #=============================================================================#
-
+print("Running main function")
 mainScript()
+
+sortedRatio5 = sortDic(ratio5)
+sortedRatio9 = sortDic(ratio9)
+
 
 #=============================================================================#
 # Track time
 #=============================================================================#
 print("**************************************************")
+print("Script finished:")
 timeElapsed()
