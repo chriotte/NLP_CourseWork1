@@ -1,16 +1,16 @@
 # coding: utf-8
 import unicodecsv			# csv reader
-import heapq
 import time
-from datetime import datetime
-from random import shuffle
+import re
 import matplotlib.pyplot as plt
 import operator
+
+from datetime import datetime
+from random import shuffle
 
 from sklearn.svm         import LinearSVC
 from sklearn.metrics     import precision_recall_fscore_support
 from sklearn.naive_bayes import MultinomialNB, BernoulliNB
-from sklearn             import svm
 
 import nltk
 from nltk.classify       import SklearnClassifier
@@ -27,10 +27,14 @@ def loadData(path, label):
     with open(path, 'rb') as f:
         reader = unicodecsv.reader(f, encoding='utf-8')
         next(reader, None)  
-#        reader.next()
         for line in reader:
             (date,tweet) = parseTweet(line)
             if tweet:   #if tweet is an empty string python reads it as False 
+                tweet = re.sub("[^a-zA-Z0-9 #]","",tweet)
+                tweet = re.sub(r'^https?:\/\/.*[\r\n]*', '__URL__', tweet, flags=re.MULTILINE)
+                lemmatizer = WordNetLemmatizer()
+                tweet = lemmatizer.lemmatize(tweet)
+            
                 tokenizedTweets     = preProcess(tweet)
                 tweetFeatureVector = toFeatureVector(tokenizedTweets)
                 tweetData.append((date,tokenizedTweets,label))      # (date, [word1, word2, word3], label)

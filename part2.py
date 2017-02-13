@@ -1,15 +1,20 @@
-
+#=============================================================================#
+# Part II
+#=============================================================================#
 # coding: utf-8
 import unicodecsv			# csv reader
 import time
+import re
 from datetime import datetime
 from nltk.probability import ConditionalFreqDist
 from nltk.probability import ConditionalProbDist, LaplaceProbDist, MLEProbDist
 from nltk.tokenize       import TweetTokenizer
+from nltk.stem import WordNetLemmatizer
+from nltk.stem import PorterStemmer
 
 timeStart = time.time()
 #=============================================================================#
-# Load and process 
+# Load and process data, getters
 #=============================================================================#
 def loadApplicationData(path):
      with open(path, 'rb') as f:
@@ -19,8 +24,18 @@ def loadApplicationData(path):
              (date,tweet) = parseTweet(line)
              if tweet:  
                  tokenizedTweets = preProcess(tweet)
+                 tempString = []
+                 for items in tokenizedTweets:
+                     items = re.sub("[^a-zA-Z0-9 #]","",items)
+                     items = re.sub(r'^https?:\/\/.*[\r\n]*', '__URL__', items, flags=re.MULTILINE)
+                     ps = PorterStemmer() 
+                     items = ps.stem(items)
+                     tempString.append(items)
                  date = simplifyDate(date)
-                 londonTweetData.append([tokenizedTweets, date])
+                 londonTweetData.append([tempString, date])
+                 
+##TODO
+# Remove stopwords
                      
 def parseTweet(tweetLine):
      tweet = tweetLine[4]
@@ -48,27 +63,40 @@ def fiveAndNineJan(londonTweetData):
             londonTweetData5.append(tweet)
         elif tweet[1].day == 9:
             londonTweetData9.append(tweet)
-        
-londonTweetData     = []
-londonTweetData5    = []
-londonTweetData9    = []
 
-path                = 'Data/'
-londonPath          = path + 'london_2017_tweets_TINY.csv'  # 5.000 lines
-londonPath          = path + 'london_2017_tweets.csv'       # full dataset
+def findUniqueBigrams(bigramData):
+    uniqueBigrams = []
+    for bigram in bigramData:
+        if bigramData not in uniqueBigrams:
+            uniqueBigrams.append(bigram)
+    return uniqueBigrams
 
-loadApplicationData(londonPath)   
-fiveAndNineJan(londonTweetData)
-#=============================================================================#
-# A bigram model using the NLTK built-in functions
-#=============================================================================#
 def getBigrams(tweets):
     bigrams = []
     for tweet in tweets:# if there is more than one element in the list
         for word in range(len(tweet)-1):
             bigrams.append((tweet[word], tweet[word+1]))
-    return bigrams
+    return bigrams    
 
+# Count number of occurrences of bigram (x,y), in a given dataset
+def countBigrams(x, y, dataset):
+    bigram = (x,y)
+    dataset = getBigrams(getTweets(dataset))
+    count = 0
+    for items in dataset:
+        if items == bigram:
+            count += 1
+    print(count, "bigrams found that match(", x, ",", y, ")")
+
+def timeElapsed():
+    print("   Done...")
+    timeEnd = time.time()
+    elapsed = timeEnd-timeStart
+    print("   Elapsed seconds:", int(elapsed))
+        
+#=============================================================================#
+# A bigram model using the NLTK built-in functions
+#=============================================================================#
 # conditionalProbDist will return a probability distribution over a list of
 # bigrams, together with a specified probability distribution constructor
 def conditionalProbDist(probDist, bigrams):
@@ -81,32 +109,46 @@ def quickMLE(tweets):
     condProbDist = conditionalProbDist(MLEProbDist, bigrams)
     return condProbDist
 
-def countBigrams(x, y, dataset):
-    bigram = (x,y)
-    dataset = getBigrams(getTweets(dataset))
-    count = 0
-    for items in dataset:
-        if items == bigram:
-            count += 1
-    print(count, "bigrams found that match", x, "and", y)
-            
-# this is the function where you can put your main script, which you can then
-# toggle if for test purposes
+def getRatio(x,y):
+    return "lol"
+    
+#=============================================================================#
+# Intialize variables
+#=============================================================================#
+londonTweetData     = []
+londonTweetData5    = []
+londonTweetData9    = []
+
+path                = 'Data/'
+londonPath          = path + 'london_2017_tweets_TINY.csv'  # 5.000 lines
+#londonPath          = path + 'london_2017_tweets.csv'       # full dataset
+
+print("Loading data")
+loadApplicationData(londonPath)   
+fiveAndNineJan(londonTweetData)
+timeElapsed()
+print("Finding unique bigrams")
+uniqueBigramsData5 = findUniqueBigrams(getBigrams(getTweets(londonTweetData5)))
+uniqueBigramsData9 = findUniqueBigrams(getBigrams(getTweets(londonTweetData9)))
+timeElapsed()
+#=============================================================================#
+# Main Function
+#=============================================================================#
+
 def mainScript():
     
     print("Probabilities of bigram: ('Tube','strike')")
     londonTweet  = quickMLE(londonTweetData)
     londonTweet5 = quickMLE(londonTweetData5)
     londonTweet9 = quickMLE(londonTweetData9)
-    countBigrams('Tube','strike',londonTweetData)
-    countBigrams('Tube','strike',londonTweetData5)
-    countBigrams('Tube','strike',londonTweetData9)
+
     print("londonTweet :",londonTweet["tube"].prob("strike"))
     print("5 Jan       :",londonTweet5["tube"].prob("strike"))
     print("9 Jan       :",londonTweet9["tube"].prob("strike"))
+   
      
 #=============================================================================#
-# Comment out to disable main function. 
+# Comment out to disable 
 #=============================================================================#
 
 mainScript()
@@ -115,6 +157,4 @@ mainScript()
 # Track time
 #=============================================================================#
 print("**************************************************")
-timeEnd = time.time()
-elapsed = timeEnd-timeStart
-print("Elapsed seconds:", int(elapsed))
+timeElapsed()
