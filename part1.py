@@ -55,7 +55,6 @@ def loadApplicationData(path):
                     tweetFeatureVector = toFeatureVector(tokenizedTweets)
                     londonTweetData.append([tweetFeatureVector, date])
 
-
 #=============================================================================#
 # TEXT PREPROCESSING AND FEATURE VECTORIZATION
 #=============================================================================#
