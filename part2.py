@@ -12,6 +12,7 @@ from nltk.tokenize       import TweetTokenizer
 from nltk.stem import WordNetLemmatizer
 from nltk.stem import PorterStemmer
 import operator
+from nltk.corpus import stopwords
 
 timeStart = time.time()
 #=============================================================================#
@@ -26,13 +27,20 @@ def loadApplicationData(path):
              if tweet:  
                  tokenizedTweets = preProcess(tweet)
                  tempString = []
-                 for items in tokenizedTweets:
-                     items = re.sub("[^a-zA-Z0-9#][\s]","",items)
-                     items = re.sub(r'^https?:\/\/.*[\r\n]*', '__URL__', items, flags=re.MULTILINE)
-                     ps = PorterStemmer() 
-                     items = ps.stem(items)
-                     tempString.append(items)
                  date = simplifyDate(date)
+                 for items in tokenizedTweets:
+                     items = items.lower()
+                     items = items.strip('?!.,/|\;:% ')
+                     items = items.replace(" ", "")
+                     items = re.sub(r'^https?:\/\/.*[\r\n]*', '__URL__', items, flags=re.MULTILINE)
+                     items = re.sub("[^a-z#@][\s]","",items)
+                     ps = PorterStemmer()
+                     items = ps.stem(items)
+                     if items:
+                         stop_words = set(stopwords.words("English"))
+                         if items not in stop_words:
+                             tempString.append(items)
+                 
                  londonTweetData.append([tempString, date])
 ##TODO
 # Remove stopwords
@@ -134,21 +142,23 @@ print("Loading data")
 loadApplicationData(londonPath)   
 fiveAndNineJan(londonTweetData)
 timeElapsed()
+
 print("Finding unique bigrams")
 uniqueBigramsData5 = findUniqueBigrams(getBigrams(getTweets(londonTweetData5)))
 uniqueBigramsData9 = findUniqueBigrams(getBigrams(getTweets(londonTweetData9)))
 timeElapsed()
+
 print("Finding the top 10% most common bigrams" )
-test = findXCommonBigrams(uniqueBigramsData9, 10)
-for x in test:
-    print(x)
+percent = 10
+mostCommonJan5 = findXCommonBigrams(uniqueBigramsData5, percent)
+mostCommonJan9 = findXCommonBigrams(uniqueBigramsData9, percent)
 timeElapsed()
 #=============================================================================#
 # Main Function
 #=============================================================================#
 
 def mainScript():
-    print("Probabilities of bigram: ('Tube','strike')")
+    print("Probabilities of bigram: ('tube','strike')")
     londonTweet  = quickMLE(londonTweetData)
     londonTweet5 = quickMLE(londonTweetData5)
     londonTweet9 = quickMLE(londonTweetData9)
@@ -156,7 +166,6 @@ def mainScript():
     print("londonTweet :",londonTweet["tube"].prob("strike"))
     print("5 Jan       :",londonTweet5["tube"].prob("strike"))
     print("9 Jan       :",londonTweet9["tube"].prob("strike"))
-   
      
 #=============================================================================#
 # Comment out to disable 
