@@ -11,6 +11,7 @@ from nltk.probability import ConditionalProbDist, LaplaceProbDist, MLEProbDist
 from nltk.tokenize       import TweetTokenizer
 from nltk.stem import WordNetLemmatizer
 from nltk.stem import PorterStemmer
+import operator
 
 timeStart = time.time()
 #=============================================================================#
@@ -26,17 +27,15 @@ def loadApplicationData(path):
                  tokenizedTweets = preProcess(tweet)
                  tempString = []
                  for items in tokenizedTweets:
-                     items = re.sub("[^a-zA-Z0-9 #]","",items)
+                     items = re.sub("[^a-zA-Z0-9#][\s]","",items)
                      items = re.sub(r'^https?:\/\/.*[\r\n]*', '__URL__', items, flags=re.MULTILINE)
                      ps = PorterStemmer() 
                      items = ps.stem(items)
                      tempString.append(items)
                  date = simplifyDate(date)
                  londonTweetData.append([tempString, date])
-                 
 ##TODO
 # Remove stopwords
-                     
 def parseTweet(tweetLine):
      tweet = tweetLine[4]
      date  = datetime.strptime(tweetLine[1], "%Y-%m-%d %H:%M:%S")
@@ -65,10 +64,12 @@ def fiveAndNineJan(londonTweetData):
             londonTweetData9.append(tweet)
 
 def findUniqueBigrams(bigramData):
-    uniqueBigrams = []
+    uniqueBigrams = {}
     for bigram in bigramData:
-        if bigramData not in uniqueBigrams:
-            uniqueBigrams.append(bigram)
+        if bigram not in uniqueBigrams:
+            uniqueBigrams[bigram] = 1
+        else:
+            uniqueBigrams[bigram] += 1
     return uniqueBigrams
 
 def getBigrams(tweets):
@@ -76,7 +77,7 @@ def getBigrams(tweets):
     for tweet in tweets:# if there is more than one element in the list
         for word in range(len(tweet)-1):
             bigrams.append((tweet[word], tweet[word+1]))
-    return bigrams    
+    return bigrams
 
 # Count number of occurrences of bigram (x,y), in a given dataset
 def countBigrams(x, y, dataset):
@@ -93,6 +94,12 @@ def timeElapsed():
     timeEnd = time.time()
     elapsed = timeEnd-timeStart
     print("   Elapsed seconds:", int(elapsed))
+
+
+def findXCommonBigrams(bigramData, x):
+    sorted_x = sorted(bigramData.items(), key=operator.itemgetter(1), reverse = True)
+    sorted_x = sorted_x[0:int((len(bigramData)*(x/100)))]
+    return sorted_x
         
 #=============================================================================#
 # A bigram model using the NLTK built-in functions
@@ -121,7 +128,7 @@ londonTweetData9    = []
 
 path                = 'Data/'
 londonPath          = path + 'london_2017_tweets_TINY.csv'  # 5.000 lines
-#londonPath          = path + 'london_2017_tweets.csv'       # full dataset
+londonPath          = path + 'london_2017_tweets.csv'       # full dataset
 
 print("Loading data")
 loadApplicationData(londonPath)   
@@ -131,12 +138,16 @@ print("Finding unique bigrams")
 uniqueBigramsData5 = findUniqueBigrams(getBigrams(getTweets(londonTweetData5)))
 uniqueBigramsData9 = findUniqueBigrams(getBigrams(getTweets(londonTweetData9)))
 timeElapsed()
+print("Finding the top 10% most common bigrams" )
+test = findXCommonBigrams(uniqueBigramsData9, 10)
+for x in test:
+    print(x)
+timeElapsed()
 #=============================================================================#
 # Main Function
 #=============================================================================#
 
 def mainScript():
-    
     print("Probabilities of bigram: ('Tube','strike')")
     londonTweet  = quickMLE(londonTweetData)
     londonTweet5 = quickMLE(londonTweetData5)
